@@ -57,8 +57,8 @@ export default function EditProfile() {
 
     const loadAccountData = async () => {
         const response = await recoverAccountData(localStorage.getItem("USER_TOKEN"))
-        setEmail(response.data.email)
-        setName(response.data.name)
+        setEmail(response.data.user.email)
+        setName(response.data.user.name)
     }
 
     const history = useHistory();
