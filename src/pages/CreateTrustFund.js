@@ -17,6 +17,8 @@ import Container from '@material-ui/core/Container';
 import {createUser} from "../services/api/users";
 import { useHistory } from "react-router-dom";
 import Routes from "../Routes";
+import {Input, InputLabel, MenuItem, Select, useTheme} from "@material-ui/core";
+import {createFund} from "../services/api/trustFund";
 import errorHandler from "../utils/errorHandler";
 
 function Alert(props) {
@@ -43,18 +45,25 @@ const useStyles = makeStyles((theme) => ({
     },
 }));
 
-export default function SignUp() {
+
+
+export default function CreateTrustFund() {
     const classes = useStyles();
     const horizontal = 'center';
     const vertical = 'top';
     const [open, setOpen] = React.useState(false);
-    const [email, setEmail] = useState();
-    const [password, setPassword] = useState();
-    const [name, setName] = useState();
-    const [errorList, setErrorList] = useState([<li>exemplo</li>]);
-    const [password_confirmation, setPasswordConfirmation] = useState();
+    const [openSelect, setOpenSelect] = React.useState(false);
+    const [trustFundType, setTrustFundType] = React.useState("");
+    const [name, setName] = React.useState("");
+    const [errorList, setErrorList] = React.useState([<li>exemplo</li>]);
 
     const history = useHistory();
+
+    const fundTypes = [
+        'STOCK',
+        'FUND',
+        'DIRECT_TREASURY',
+    ];
 
     const handleClose = (event, reason) => {
         if (reason === 'clickaway') {
@@ -64,28 +73,36 @@ export default function SignUp() {
         setOpen(false);
     };
 
-    async function signUp(event) {
+    const handleCloseSelect = () => {
+        setOpenSelect(false);
+    };
+
+
+    const handleChange = (event) => {
+        setTrustFundType(event.target.value);
+    };
+
+    const createTrustFund = async (event) => {
         event.preventDefault()
-        const userData = {
-            name: name,
-            email: email,
-            password: password,
-            password_confirmation: password_confirmation
-        }
-        const response = await createUser(userData);
-        if(response.errors != null) {
+        const response = await createFund(localStorage.getItem("USER_TOKEN"), name, trustFundType)
+        if (response.errors != null) {
             const errors = errorHandler(response)
             setErrorList(errors)
             setOpen(true)
         } else {
             history.push({
-                pathname: '/',
+                pathname: '/Account',
                 state: {
                     userCreated: true
                 }
             })
         }
     }
+
+    const handleOpenSelect = () => {
+        setOpenSelect(true);
+    };
+
     return (
         <Container component="main" maxWidth="xs">
             <CssBaseline />
@@ -94,9 +111,9 @@ export default function SignUp() {
                     <LockOutlinedIcon />
                 </Avatar>
                 <Typography component="h1" variant="h5">
-                    Sign up
+                    Create Trust Fund
                 </Typography>
-                <form onSubmit={signUp} className={classes.form} noValidate>
+                <form onSubmit={createTrustFund} className={classes.form} noValidate>
                     <Grid container spacing={2}>
                         <Grid item xs={12}>
                             <TextField
@@ -112,42 +129,22 @@ export default function SignUp() {
                             />
                         </Grid>
                         <Grid item xs={12}>
-                            <TextField
-                                onChange={(e) => setEmail(e.target.value)}
-                                variant="outlined"
-                                required
-                                fullWidth
-                                id="email"
-                                label="Email Address"
-                                name="email"
-                                autoComplete="email"
-                            />
-                        </Grid>
-                        <Grid item xs={12}>
-                            <TextField
-                                onChange={(e) => setPassword(e.target.value)}
-                                variant="outlined"
-                                required
-                                fullWidth
-                                name="password"
-                                label="Password"
-                                type="password"
-                                id="password"
-                                autoComplete="current-password"
-                            />
-                        </Grid>
-                        <Grid item xs={12}>
-                            <TextField
-                                onChange={(e) => setPasswordConfirmation(e.target.value)}
-                                variant="outlined"
-                                required
-                                fullWidth
-                                name="passwordConfirmation"
-                                label="Password Confirmation"
-                                type="password"
-                                id="passwordConfirmation"
-                                autoComplete="current-password"
-                            />
+                            <InputLabel id="demo-mutiple-name-label">Trust Fund Type</InputLabel>
+                            <Select
+                                labelId="demo-controlled-open-select-label"
+                                id="demo-controlled-open-select"
+                                open={openSelect}
+                                onClose={handleCloseSelect}
+                                onOpen={handleOpenSelect}
+                                value={trustFundType}
+                                onChange={handleChange}
+                            >
+                                {fundTypes.map((type) => (
+                                    <MenuItem key={type} value={type}>
+                                        {type.replace('_', ' ')}
+                                    </MenuItem>
+                                ))}
+                            </Select>
                         </Grid>
                     </Grid>
                     <Snackbar open={open} autoHideDuration={6000} onClose={handleClose} anchorOrigin={{ vertical,  horizontal }}>
@@ -164,15 +161,8 @@ export default function SignUp() {
                         color="primary"
                         className={classes.submit}
                     >
-                        Sign Up
+                        Create
                     </Button>
-                    <Grid container justify="flex-end">
-                        <Grid item>
-                            <Link to="/">
-                                Already have an account? Sign in
-                            </Link>
-                        </Grid>
-                    </Grid>
                 </form>
             </div>
         </Container>
