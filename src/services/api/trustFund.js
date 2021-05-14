@@ -7,7 +7,15 @@ export const createFund = async (token, name, fund_type) => {
         headers: { 'Content-Type': 'application/json', 'Authorization': token },
         body: body
     }
-    console.log("->" + body)
     const response = await fetch(`${baseUrl}/api/v1/trust_fund`, requestOptions)
+    return response.json()
+}
+
+export const recoverTrustFunds = async (token) => {
+    const requestOptions = {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json', 'Authorization': token },
+    }
+    const response = await fetch(`${baseUrl}/api/v1/trust_funds`, requestOptions)
     return response.json()
 }

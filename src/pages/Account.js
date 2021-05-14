@@ -26,6 +26,8 @@ import Snackbar from "@material-ui/core/Snackbar";
 import MuiAlert from "@material-ui/lab/Alert";
 import CancelIcon from '@material-ui/icons/Cancel';
 import transitions from "@material-ui/core/styles/transitions";
+import {recoverTrustFunds} from "../services/api/trustFund";
+import {investValue, recoverUserTrustFundInvestment, withdrawInvestmentValue} from "../services/api/investment";
 
 function Alert(props) {
     return <MuiAlert elevation={6} variant="filled" {...props} />;
@@ -94,28 +96,22 @@ export default function Account() {
     const [userData, setUserData] = React.useState({name: "", email: ""})
     const [accountData, setAccountData] = React.useState({balance: ""})
     const [openDialog, setOpenDialog] = React.useState(false);
+    const [openInvestDialog, setOpenInvestDialog] = React.useState(false);
     const [openSnackBar, setOpenSnackbar] = React.useState(false)
     const [dialogMessage, setDialogMessage] = React.useState("")
     const [operationIsDeposit, setOperationIsDeposit] = React.useState(false)
+    const [operationIsInvest, setOperationIsInvest] = React.useState(false)
     const [balanceOperationValue, setBalanceOperationValue] = React.useState(0)
+    const [investOperationValue, setInvestOperationValue] = React.useState(0)
     const [snackbarMessage, setSnackbarMessage] = React.useState("")
     const [openStatement, setOpenStatement] = React.useState(false)
     const [accountStatement, setAccountStatement] = React.useState([])
     const [statementDate, setStatementDate] = React.useState(new Date())
+    const [trustFunds, setTrustFunds] = React.useState([])
+    const [userInvestment, setUserInvestment] = React.useState(0)
+    const [trustFundId, setTrustFundId] = React.useState()
     const horizontal = 'center';
     const vertical = 'top';
-
-    function createData(name, calories, fat, carbs, protein) {
-        return { name, calories, fat, carbs, protein };
-    }
-
-    const rows = [
-        createData('Frozen yoghurt', 159, 6.0, 24, 4.0),
-        createData('Ice cream sandwich', 237, 9.0, 37, 4.3),
-        createData('Eclair', 262, 16.0, 24, 6.0),
-        createData('Cupcake', 305, 3.7, 67, 4.3),
-        createData('Gingerbread', 356, 16.0, 49, 3.9),
-    ];
 
     const handleClickOpenDialog = () => {
         setOpenDialog(true);
@@ -142,6 +138,7 @@ export default function Account() {
         } else {
             withdraw()
         }
+        handleCloseDialog()
     }
 
     async function deposit() {
@@ -150,7 +147,6 @@ export default function Account() {
             balance: response.data.transaction.balance
         }
         setAccountData(accountData)
-        handleCloseDialog()
     }
 
     async function withdraw() {
@@ -164,7 +160,6 @@ export default function Account() {
             }
             setAccountData(accountData)
         }
-        handleCloseDialog()
     }
 
     const handleDepositDialog = () => {
@@ -183,6 +178,10 @@ export default function Account() {
         setOpenDialog(false);
     };
 
+    const handleCloseInvestDialog = () => {
+        setOpenInvestDialog(false);
+    }
+
     const history = useHistory();
 
     const filterTransactionsFromCurrentDate = (statement) => {
@@ -193,7 +192,13 @@ export default function Account() {
 
     useEffect(() => {
         loadAccountData();
+        loadTrustFunds();
     }, []);
+
+    const loadTrustFunds = async () => {
+        const response = await recoverTrustFunds(localStorage.getItem("USER_TOKEN"))
+        setTrustFunds(response.data.trust_funds)
+    }
 
     const loadAccountData = async () => {
         const response = await recoverAccountData(localStorage.getItem("USER_TOKEN"))
@@ -237,6 +242,67 @@ export default function Account() {
         history.push('/')
     }
 
+    function investDialog() {
+        getUserInvestment(trustFundId)
+        setOpenInvestDialog(true);
+        setOperationIsInvest(true)
+        setDialogMessage("Invest");
+    }
+
+
+    function withdrawInvestDialog() {
+        getUserInvestment(trustFundId)
+        setOpenInvestDialog(true)
+        setOperationIsInvest(false)
+        setDialogMessage("Withdraw Investment")
+    }
+
+    async function getUserInvestment(trustFundId) {
+        const response = await recoverUserTrustFundInvestment(trustFundId)
+        if (response.data?.investment) {
+            setUserInvestment(response.data.investment.value)
+        } else {
+            setUserInvestment(0)
+        }
+    }
+
+    function investOperation() {
+        if(operationIsInvest) {
+            invest()
+        } else {
+            withdrawInvestment()
+        }
+        handleCloseInvestDialog()
+    }
+
+    async function invest() {
+        const response = await investValue(localStorage.getItem("USER_TOKEN"), trustFundId, investOperationValue)
+        if(response.errors != null){
+            setOpenSnackbar(true)
+            setSnackbarMessage(response.errors.value[0])
+        } else {
+            const accountData = {
+                balance: response.data.account.balance
+            }
+            setAccountData(accountData)
+            loadTrustFunds()
+        }
+    }
+
+    async function withdrawInvestment() {
+        const response = await withdrawInvestmentValue(localStorage.getItem("USER_TOKEN"), trustFundId, investOperationValue)
+        if(response.errors != null){
+            setOpenSnackbar(true)
+            setSnackbarMessage(response.errors.value[0])
+        } else {
+            const accountData = {
+                balance: response.data.account.balance
+            }
+            setAccountData(accountData)
+            loadTrustFunds()
+        }
+    }
+
     return (
         <div className={classes.root}>
             <CssBaseline />
@@ -274,7 +340,6 @@ export default function Account() {
                     <Button variant="contained" onClick={handleOpenStatement}>STATEMENT</Button>
                 </div>
                 <Dialog open={openDialog} onClose={handleCloseDialog} aria-labelledby="form-dialog-title">
-                    <DialogTitle id="form-dialog-title">Subscribe</DialogTitle>
                     <DialogContent>
                         <TextField
                             autoFocus
@@ -351,28 +416,50 @@ export default function Account() {
                     <Table className={classes.dataTable} aria-label="simple table">
                         <TableHead>
                             <TableRow>
-                                <TableCell>Dessert (100g serving)</TableCell>
-                                <TableCell align="right">Calories</TableCell>
-                                <TableCell align="right">Fat&nbsp;(g)</TableCell>
-                                <TableCell align="right">Carbs&nbsp;(g)</TableCell>
-                                <TableCell align="right">Protein&nbsp;(g)</TableCell>
+                                <TableCell align="center">Name</TableCell>
+                                <TableCell align="center">Type</TableCell>
+                                <TableCell align="center">Total Invested</TableCell>
+                                <TableCell align="center"></TableCell>
+                                <TableCell align="center"></TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {rows.map((row) => (
-                                <TableRow key={row.name}>
-                                    <TableCell component="th" scope="row">
-                                        {row.name}
+                            {trustFunds.map((trustFund) => (
+                                <TableRow key={trustFund.name}>
+                                    <TableCell component="th" scope="row" align="center">
+                                        {trustFund.fund?.name}
                                     </TableCell>
-                                    <TableCell align="right">{row.calories}</TableCell>
-                                    <TableCell align="right">{row.fat}</TableCell>
-                                    <TableCell align="right">{row.carbs}</TableCell>
-                                    <TableCell align="right">{row.protein}</TableCell>
+                                    <TableCell align="center">{trustFund.fund?.fund_type?.replace('_', ' ')}</TableCell>
+                                    <TableCell align="center">${numberFormatter(trustFund.investmentsTotal)}</TableCell>
+                                    <TableCell align="center"><Button onClick={() => { setTrustFundId(trustFund.fund?.id); investDialog(); }} variant="contained" color="primary">invest</Button></TableCell>
+                                    <TableCell align="center"><Button onClick={withdrawInvestDialog} variant="contained" color="secondary">withdraw Investment</Button></TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>
                     </Table>
                 </TableContainer>
+                <Dialog open={openInvestDialog} onClose={handleCloseInvestDialog} aria-labelledby="form-dialog-title">
+                    <DialogTitle id="form-dialog-title">User Investment: ${numberFormatter(userInvestment)}</DialogTitle>
+                    <DialogContent>
+                        <TextField
+                            autoFocus
+                            onChange={(e) => {setInvestOperationValue(parseFloat(e.target.value))}}
+                            margin="dense"
+                            id="value"
+                            label="Value"
+                            type="number"
+                            fullWidth
+                        />
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={handleCloseInvestDialog} color="primary">
+                            Cancel
+                        </Button>
+                        <Button onClick={investOperation} color="primary">
+                            {dialogMessage}
+                        </Button>
+                    </DialogActions>
+                </Dialog>
             </Container>
         </div>
     );
