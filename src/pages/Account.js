@@ -124,6 +124,7 @@ export default function Account() {
     const handleOpenStatement = async () => {
         const response = await recoverStatement(localStorage.getItem("USER_TOKEN"))
         setStatementDate(new Date())
+        console.log(JSON.stringify(response.data.account_statement))
         setAccountStatement(response.data.account_statement)
         setOpenStatement(true)
     }
@@ -186,7 +187,7 @@ export default function Account() {
 
     const filterTransactionsFromCurrentDate = (statement) => {
         return statement.filter((transition) => {
-            return new Date(transition.created_at).toDateString() === statementDate.toDateString()
+            return new Date(transition.statement?.created_at).toDateString() === statementDate.toDateString()
         })
     }
 
@@ -390,16 +391,18 @@ export default function Account() {
                                     <StyledTableCell align="center">Operation</StyledTableCell>
                                     <StyledTableCell align="center">Value</StyledTableCell>
                                     <StyledTableCell align="center">Resulting Balance</StyledTableCell>
+                                    <StyledTableCell align="center">Trust Fund</StyledTableCell>
                                 </TableRow>
                             </TableHead>
                             <TableBody>
                                 {filterTransactionsFromCurrentDate(accountStatement).map((transaction) => (
-                                    <StyledTableRow key={transaction}>
+                                    <StyledTableRow key={transaction.statement}>
                                         <StyledTableCell align="center" component="th" scope="row">
-                                            {transaction.transaction_type}
+                                            {transaction.statement?.transaction_type.replace('_', ' ')}
                                         </StyledTableCell>
-                                        <StyledTableCell align="center">{transaction.value}</StyledTableCell>
-                                        <StyledTableCell align="center">{transaction.balance}</StyledTableCell>
+                                        <StyledTableCell align="center">{transaction.statement?.value}</StyledTableCell>
+                                        <StyledTableCell align="center">{transaction.statement?.balance}</StyledTableCell>
+                                        <StyledTableCell align="center">{transaction.trust_fund}</StyledTableCell>
                                     </StyledTableRow>
                                 ))}
                             </TableBody>
