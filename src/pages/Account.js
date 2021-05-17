@@ -414,6 +414,7 @@ export default function Account() {
                                     <StyledTableCell align="center"><Button variant="contained" onClick={prevDay}>Prev day</Button></StyledTableCell>
                                     <StyledTableCell align="center">{statementDate.toDateString()}</StyledTableCell>
                                     <StyledTableCell align="center"><Button variant="contained" onClick={nextDay}>Next day</Button></StyledTableCell>
+                                    <StyledTableCell align="center"></StyledTableCell>
                                 </TableRow>
                             </TableHead>
                             <TableHead>
