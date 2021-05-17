@@ -3,7 +3,13 @@ import CssBaseline from '@material-ui/core/CssBaseline';
 import Typography from '@material-ui/core/Typography';
 import { makeStyles } from '@material-ui/core/styles';
 import Container from '@material-ui/core/Container';
-import {depositValue, recoverAccountData, recoverStatement, withdrawValue} from "../services/api/account";
+import {
+    depositValue,
+    recoverAccountData,
+    recoverStatement,
+    recoverUserInvestments,
+    withdrawValue
+} from "../services/api/account";
 import {
     AppBar,
     Dialog,
@@ -110,6 +116,8 @@ export default function Account() {
     const [trustFunds, setTrustFunds] = React.useState([])
     const [userInvestment, setUserInvestment] = React.useState(0)
     const [trustFundId, setTrustFundId] = React.useState()
+    const [showUserInvestments, setShowUserInvestments] = React.useState(false)
+    const [userInvestments, setUserInvestments] = React.useState()
     const horizontal = 'center';
     const vertical = 'top';
 
@@ -131,6 +139,10 @@ export default function Account() {
 
     const handleCloseSnackbar = () => {
         setOpenSnackbar(false)
+    }
+
+    const switchShowUserInvestments = () => {
+        setShowUserInvestments(!showUserInvestments)
     }
 
     const balanceOperation = () => {
@@ -194,11 +206,17 @@ export default function Account() {
     useEffect(() => {
         loadAccountData();
         loadTrustFunds();
+        loadUserInvestments();
     }, []);
 
     const loadTrustFunds = async () => {
         const response = await recoverTrustFunds(localStorage.getItem("USER_TOKEN"))
         setTrustFunds(response.data.trust_funds)
+    }
+
+    const loadUserInvestments = async () => {
+        const response = await recoverUserInvestments(localStorage.getItem("USER_TOKEN"))
+        setUserInvestments(response.data.investments)
     }
 
     const loadAccountData = async () => {
@@ -274,6 +292,18 @@ export default function Account() {
             withdrawInvestment()
         }
         handleCloseInvestDialog()
+    }
+
+    function returnTrustFunds() {
+        if(showUserInvestments) {
+            const userTrustFunds = userInvestments.filter(inv => inv.investment.value > 0).map(inv => {
+                 return {fund: inv.trust_fund, investmentsTotal: inv.investment.value}
+                }
+            )
+            return userTrustFunds
+        } else {
+            return trustFunds
+        }
     }
 
     async function invest() {
@@ -421,13 +451,13 @@ export default function Account() {
                             <TableRow>
                                 <TableCell align="center">Name</TableCell>
                                 <TableCell align="center">Type</TableCell>
-                                <TableCell align="center">Total Invested</TableCell>
+                                <TableCell align="center">{showUserInvestments? ("User Investment") : ("Total Invested")}</TableCell>
                                 <TableCell align="center"></TableCell>
-                                <TableCell align="center"></TableCell>
+                                <TableCell align="center"><Button variant="contained" onClick={switchShowUserInvestments}>{showUserInvestments? ("User Investments") : ("All Trust Funds")}</Button></TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {trustFunds.map((trustFund) => (
+                            {returnTrustFunds().map((trustFund) => (
                                 <TableRow key={trustFund.name}>
                                     <TableCell component="th" scope="row" align="center">
                                         {trustFund.fund?.name}

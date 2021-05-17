@@ -37,3 +37,12 @@ export const recoverStatement = async (token) => {
     const response = await fetch(`${baseUrl}/api/v1/account/statement`, requestOptions)
     return response.json()
 }
+
+export const recoverUserInvestments = async(token) => {
+    const requestOptions = {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json', 'Authorization': token }
+    }
+    const response = await fetch(`${baseUrl}/api/v1/account/investments`, requestOptions)
+    return response.json()
+}
